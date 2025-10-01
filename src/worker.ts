@@ -16,13 +16,15 @@ const q: Array<{
 let timer: Timer | null = null;
 let fileWriter: any = null;
 
-const COLORS: Record<string, string> = {
+const DEFAULT_COLORS: Record<string, string> = {
   debug: "\x1b[36m", // cyan
   info: "\x1b[32m", // green
   warn: "\x1b[33m", // yellow
   error: "\x1b[31m", // red
   reset: "\x1b[0m",
 };
+
+let COLORS = { ...DEFAULT_COLORS };
 
 function formatLog(entry: {
   t: number;
@@ -117,6 +119,14 @@ self.onmessage = (e: MessageEvent) => {
     FORMAT = d.format ?? "json";
     DEST = d.destination ?? "stdout";
     IS_TTY = d.isTTY ?? false;
+
+    // Merge custom colors with defaults
+    if (d.colors) {
+      COLORS = {
+        ...DEFAULT_COLORS,
+        ...d.colors,
+      };
+    }
     return;
   }
   if (d?.__flush) {

@@ -78,6 +78,24 @@ const logger = createLogger({
 // INFO  [2025-10-01T12:34:56.789Z] User logged in {"userId":"123"}
 ```
 
+### Custom colors
+
+```ts
+const logger = createLogger({
+  format: "pretty",
+  colors: {
+    error: "brightRed",
+    warn: "brightYellow",
+    info: "mint",
+    // debug keeps default cyan
+  },
+});
+```
+
+**Available colors:**
+- Basic: `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `gray`, `mint`
+- Bright: `brightRed`, `brightGreen`, `brightYellow`, `brightBlue`, `brightMagenta`, `brightCyan`, `brightWhite`
+
 ## API
 
 ### `createLogger(options?): Logger`
@@ -92,6 +110,7 @@ Creates a logger instance.
 - `flushInterval?: number` - Maximum time (ms) before flushing
 - `maxQueueSize?: number` - Max queue size for backpressure
 - `onError?: (err: Error) => void` - Error callback
+- `colors?: { debug?, info?, warn?, error? }` - Custom colors for pretty format (see available colors above)
 
 ### `Logger`
 
