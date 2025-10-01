@@ -4,7 +4,8 @@ type Destination = "stdout" | "stderr" | { file: string } | { fd: number };
 let BATCH = 64,
   INTERVAL = 200,
   FORMAT: OutputFormat = "json",
-  DEST: Destination = "stdout";
+  DEST: Destination = "stdout",
+  IS_TTY = false;
 
 const q: Array<{
   t: number;
@@ -39,9 +40,7 @@ function formatLog(entry: {
   const level = entry.level.toUpperCase().padEnd(5);
   const metaStr = entry.meta ? ` ${JSON.stringify(entry.meta)}` : "";
 
-  const isTTY =
-    typeof (self as any).Bun !== "undefined" && (Bun.stdout as any).isTTY;
-  if (isTTY) {
+  if (IS_TTY) {
     return `${color}${level}${reset} [${ts}] ${entry.msg}${metaStr}`;
   }
   return `${level} [${ts}] ${entry.msg}${metaStr}`;
@@ -117,6 +116,7 @@ self.onmessage = (e: MessageEvent) => {
     INTERVAL = d.flushInterval ?? 200;
     FORMAT = d.format ?? "json";
     DEST = d.destination ?? "stdout";
+    IS_TTY = d.isTTY ?? false;
     return;
   }
   if (d?.__flush) {

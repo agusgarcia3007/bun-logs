@@ -51,12 +51,18 @@ export function createLogger(opts: LoggerOptions = {}): Logger {
     }
   };
 
+  // Detect TTY for color support
+  // For stdout/stderr, assume TTY and enable colors in pretty mode
+  const dest = opts.destination ?? "stdout";
+  const isTTY = typeof dest === "string" && (dest === "stdout" || dest === "stderr");
+
   worker.postMessage({
     __init: true,
     batchSize: opts.batchSize ?? 64,
     flushInterval: opts.flushInterval ?? 200,
     format: opts.format ?? "json",
     destination: opts.destination ?? "stdout",
+    isTTY,
   });
 
   function post(lvl: LogLevel, msg: string, meta?: Record<string, unknown>) {
