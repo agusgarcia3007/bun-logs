@@ -1,5 +1,5 @@
 type OutputFormat = "json" | "pretty" | "raw";
-type Destination = "stdout" | "stderr" | { file: string } | { fd: number };
+type Destination = "stdout" | "stderr" | string | { file: string } | { fd: number };
 
 let BATCH = 64,
   INTERVAL = 200,
@@ -14,7 +14,8 @@ const q: Array<{
   meta?: Record<string, unknown>;
 }> = [];
 let timer: Timer | null = null;
-let fileWriter: any = null;
+let fileHandle: any = null;
+let dropped = 0;
 
 const DEFAULT_COLORS: Record<string, string> = {
   debug: "\x1b[36m", // cyan
@@ -54,19 +55,25 @@ function formatLog(entry: {
 }
 
 async function getWriter() {
-  if (fileWriter) return fileWriter;
+  if (fileHandle) return fileHandle;
 
   if (typeof DEST === "string") {
-    return DEST === "stdout" ? Bun.stdout : Bun.stderr;
+    if (DEST === "stdout") return Bun.stdout;
+    if (DEST === "stderr") return Bun.stderr;
+    // File path - open once in append mode and cache
+    fileHandle = Bun.file(DEST).writer();
+    return fileHandle;
   }
 
-  if ("file" in DEST) {
-    fileWriter = Bun.file(DEST.file).writer();
-    return fileWriter;
-  }
-
-  if ("fd" in DEST) {
-    return Bun.file(DEST.fd);
+  if (typeof DEST === "object") {
+    if ("file" in DEST) {
+      fileHandle = Bun.file(DEST.file).writer();
+      return fileHandle;
+    }
+    if ("fd" in DEST) {
+      fileHandle = Bun.file(DEST.fd).writer();
+      return fileHandle;
+    }
   }
 
   return Bun.stdout;
@@ -90,17 +97,30 @@ async function flushNow() {
 
   const count = q.length;
   const lines = q.splice(0, count);
+
+  // Emit dropped logs warning if any were dropped
+  if (dropped > 0) {
+    const droppedCount = dropped;
+    dropped = 0;
+    lines.unshift({
+      t: Date.now(),
+      level: "warn",
+      msg: `Queue overflow: ${droppedCount} logs dropped`,
+      meta: { dropped: droppedCount },
+    });
+  }
+
   const chunk = lines.map(formatLog).join("\n") + "\n";
 
   try {
     const writer = await getWriter();
 
-    if (fileWriter && writer === fileWriter) {
+    if (fileHandle && writer === fileHandle) {
       // FileSink uses .write() method
       writer.write(chunk);
       await writer.flush();
     } else {
-      // BunFile uses Bun.write()
+      // stdout/stderr uses Bun.write()
       await Bun.write(writer, chunk);
     }
 
@@ -139,6 +159,10 @@ self.onmessage = (e: MessageEvent) => {
       await flushNow();
       (self as any).postMessage({ __flushed: d.__flush });
     })();
+    return;
+  }
+  if (d?.__dropped !== undefined) {
+    dropped += d.__dropped;
     return;
   }
   q.push(d);

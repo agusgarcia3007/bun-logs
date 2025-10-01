@@ -10,11 +10,12 @@ Ultra-light, Bun-first async logger with batching & worker offload. Designed to 
 
 - **Non-blocking**: All I/O happens in a Worker thread
 - **Batching**: Configurable batch size and flush interval
-- **Backpressure**: Queue overflow protection with drop reporting
-- **Multiple outputs**: stdout, stderr, files, or custom file descriptors
-- **Formats**: JSON (structured) or pretty (human-readable with colors)
+- **Backpressure**: Queue overflow protection with automatic drop counter and warning logs
+- **Multiple outputs**: stdout, stderr, or file paths (with append mode)
+- **Formats**: JSON (structured), pretty (human-readable with colors), or raw (message only)
+- **Graceful shutdown**: Automatic flush on SIGINT/SIGTERM
 - **Zero dependencies**: Pure Bun APIs
-- **Tiny**: 4KB packed, < 200 LOC total
+- **Tiny**: ~4KB packed, < 200 LOC total
 
 ## Installation
 
@@ -44,11 +45,11 @@ await logger.close();
 ```ts
 const logger = createLogger({
   level: "debug",              // Minimum log level (default: "info")
-  format: "pretty",            // "json" | "pretty" (default: "json")
-  destination: "stderr",       // "stdout" | "stderr" | { file: "app.log" } | { fd: 3 }
+  format: "pretty",            // "json" | "pretty" | "raw" (default: "json")
+  destination: "stderr",       // "stdout" | "stderr" | "./path/to/file.log" (default: "stdout")
   batchSize: 128,              // Flush after N logs (default: 64)
   flushInterval: 100,          // Flush after N ms (default: 200)
-  maxQueueSize: 2048,          // Backpressure threshold (default: 1024)
+  maxQueueSize: 20000,         // Backpressure threshold (default: 10000)
   onError: (err) => {          // Error handler (default: console.error)
     console.error("Logger error:", err);
   },
@@ -60,10 +61,22 @@ const logger = createLogger({
 ```ts
 const logger = createLogger({
   format: "json",
-  destination: { file: "./logs/app.log" },
+  destination: "./logs/app.log", // File opened once in append mode
 });
 
 logger.info("Request received", { method: "GET", path: "/" });
+// File handle is cached and reused for all writes
+```
+
+### Log to stderr
+
+```ts
+const logger = createLogger({
+  format: "json",
+  destination: "stderr", // Send logs to stderr instead of stdout
+});
+
+logger.error("Critical error", { code: "E001" });
 ```
 
 ### Pretty output for development
@@ -118,12 +131,12 @@ const logger = createLogger({
 Creates a logger instance.
 
 **Options:**
-- `level?: "debug" | "info" | "warn" | "error"` - Minimum log level
-- `format?: "json" | "pretty"` - Output format
-- `destination?: "stdout" | "stderr" | { file: string } | { fd: number }` - Output destination
-- `batchSize?: number` - Number of logs to batch before flushing
-- `flushInterval?: number` - Maximum time (ms) before flushing
-- `maxQueueSize?: number` - Max queue size for backpressure
+- `level?: "debug" | "info" | "warn" | "error"` - Minimum log level (default: `"info"`)
+- `format?: "json" | "pretty" | "raw"` - Output format (default: `"json"`)
+- `destination?: "stdout" | "stderr" | string` - Output destination (default: `"stdout"`) - string is a file path
+- `batchSize?: number` - Number of logs to batch before flushing (default: `64`)
+- `flushInterval?: number` - Maximum time (ms) before flushing (default: `200`)
+- `maxQueueSize?: number` - Max queue size for backpressure (default: `10000`)
 - `onError?: (err: Error) => void` - Error callback
 - `colors?: { debug?, info?, warn?, error? }` - Custom colors for pretty format (see available colors above)
 

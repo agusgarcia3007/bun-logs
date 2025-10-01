@@ -6,8 +6,13 @@ const LEVEL: Record<LogLevel, number> = {
   error: 40,
 };
 
+export type OutputDestination =
+  | "stdout"
+  | "stderr"
+  | string
+  | { file: string }
+  | { fd: number };
 export type OutputFormat = "json" | "pretty" | "raw";
-export type OutputDestination = "stdout" | "stderr" | { file: string } | { fd: number };
 
 export type Color =
   | "black"
@@ -77,13 +82,14 @@ export interface Logger {
 
 export function createLogger(opts: LoggerOptions = {}): Logger {
   const min = LEVEL[opts.level ?? "info"];
-  const maxQueue = opts.maxQueueSize ?? 1024;
-  const onError = opts.onError ?? ((err: Error) => console.error("[bun-logger]", err));
+  const maxQueue = opts.maxQueueSize ?? 10_000;
+  const onError =
+    opts.onError ?? ((err: Error) => console.error("[bun-logger]", err));
 
   let queueSize = 0;
   let dropped = 0;
 
-  const worker = new Worker(new URL("./worker.ts", import.meta.url).href, {
+  const worker = new Worker(new URL("./worker.js", import.meta.url).href, {
     type: "module",
   });
 
@@ -101,12 +107,15 @@ export function createLogger(opts: LoggerOptions = {}): Logger {
   // Detect TTY for color support
   // For stdout/stderr, assume TTY and enable colors in pretty mode
   const dest = opts.destination ?? "stdout";
-  const isTTY = typeof dest === "string" && (dest === "stdout" || dest === "stderr");
+  const isTTY =
+    typeof dest === "string" && (dest === "stdout" || dest === "stderr");
 
   // Convert color names to ANSI codes
   const ansiColors = opts.colors
     ? Object.entries(opts.colors).reduce((acc, [level, color]) => {
-        acc[level] = COLOR_MAP[color];
+        if (color) {
+          acc[level] = COLOR_MAP[color as keyof typeof COLOR_MAP];
+        }
         return acc;
       }, {} as Record<string, string>)
     : undefined;
@@ -126,6 +135,7 @@ export function createLogger(opts: LoggerOptions = {}): Logger {
 
     if (queueSize >= maxQueue) {
       dropped++;
+      // Call onError for first drop and every 100 drops after that
       if (dropped === 1 || dropped % 100 === 0) {
         onError(new Error(`Queue overflow: dropped ${dropped} logs`));
       }
@@ -138,6 +148,12 @@ export function createLogger(opts: LoggerOptions = {}): Logger {
 
   function flush(): Promise<void> {
     return new Promise((resolve) => {
+      // Send dropped count to worker before flushing
+      if (dropped > 0) {
+        worker.postMessage({ __dropped: dropped });
+        dropped = 0;
+      }
+
       const id = Math.random().toString(36).slice(2);
       const on = (e: MessageEvent) => {
         if (e.data?.__flushed === id) {
@@ -154,6 +170,15 @@ export function createLogger(opts: LoggerOptions = {}): Logger {
     await flush();
     worker.terminate();
   }
+
+  // Graceful shutdown on SIGINT/SIGTERM
+  const handleShutdown = async () => {
+    await close();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", handleShutdown);
+  process.on("SIGTERM", handleShutdown);
 
   return {
     debug: (m, meta) => post("debug", m, meta),
