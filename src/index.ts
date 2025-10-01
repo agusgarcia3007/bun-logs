@@ -6,15 +6,15 @@ const LEVEL: Record<LogLevel, number> = {
   error: 40,
 };
 
-export type OutputDestination =
+type OutputDestination =
   | "stdout"
   | "stderr"
   | string
   | { file: string }
   | { fd: number };
-export type OutputFormat = "json" | "pretty" | "raw";
+type OutputFormat = "json" | "pretty" | "raw";
 
-export type Color =
+type Color =
   | "black"
   | "red"
   | "green"
@@ -33,7 +33,7 @@ export type Color =
   | "brightCyan"
   | "brightWhite";
 
-export interface CustomColors {
+interface CustomColors {
   debug?: Color;
   info?: Color;
   warn?: Color;
@@ -60,7 +60,7 @@ const COLOR_MAP: Record<Color, string> = {
   brightWhite: "\x1b[97m",
 };
 
-export interface LoggerOptions {
+interface LoggerOptions {
   level?: LogLevel;
   batchSize?: number; // default 64
   flushInterval?: number; // default 200 ms
@@ -68,10 +68,22 @@ export interface LoggerOptions {
   destination?: OutputDestination; // default "stdout"
   maxQueueSize?: number; // default 1024 (backpressure)
   onError?: (err: Error) => void; // error callback
-  colors?: CustomColors; // custom colors for pretty format
+  colors?: CustomColors; // only valid when format is "pretty"
 }
 
-export interface Logger {
+interface LoggerOptionsWithColors extends LoggerOptions {
+  format: "pretty";
+  colors?: CustomColors;
+}
+
+interface LoggerOptionsWithoutColors extends LoggerOptions {
+  format?: "json" | "raw";
+  colors?: never;
+}
+
+type LoggerConfig = LoggerOptionsWithColors | LoggerOptionsWithoutColors;
+
+interface Logger {
   debug(msg: string, meta?: Record<string, unknown>): void;
   info(msg: string, meta?: Record<string, unknown>): void;
   warn(msg: string, meta?: Record<string, unknown>): void;
@@ -80,7 +92,7 @@ export interface Logger {
   close(): Promise<void>;
 }
 
-export function createLogger(opts: LoggerOptions = {}): Logger {
+export function createLogger(opts: LoggerConfig = {}): Logger {
   const min = LEVEL[opts.level ?? "info"];
   const maxQueue = opts.maxQueueSize ?? 10_000;
   const onError =

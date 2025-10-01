@@ -57,7 +57,6 @@ function formatLog(entry: {
 async function ensureDirectory(filePath: string) {
   const dir = filePath.substring(0, filePath.lastIndexOf("/"));
   if (dir) {
-    await Bun.write(Bun.file(dir + "/.keep"), "");
     await Bun.$`mkdir -p ${dir}`.quiet();
   }
 }

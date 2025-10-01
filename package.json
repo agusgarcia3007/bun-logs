@@ -1,6 +1,6 @@
 {
   "name": "bun-logs",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Ultra-light, Bun-first async logger with batching & worker offload",
   "type": "module",
   "main": "./dist/index.js",
