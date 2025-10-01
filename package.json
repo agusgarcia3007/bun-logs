@@ -19,12 +19,12 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/agusgarcia3007/bun-logger.git"
+    "url": "git+ssh://git@github.com/agusgarcia3007/bun-logs.git"
   },
   "bugs": {
-    "url": "https://github.com/agusgarcia3007/bun-logger/issues"
+    "url": "https://github.com/agusgarcia3007/bun-logs/issues"
   },
-  "homepage": "https://github.com/agusgarcia3007/bun-logger#readme",
+  "homepage": "https://github.com/agusgarcia3007/bun-logs#readme",
   "scripts": {
     "build": "bun build --entrypoints src/index.ts src/worker.ts --outdir dist --target bun --minify",
     "test": "bun test",
