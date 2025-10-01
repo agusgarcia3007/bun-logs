@@ -1,6 +1,6 @@
 {
   "name": "bun-logs",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Ultra-light, Bun-first async logger with batching & worker offload",
   "type": "module",
   "main": "./dist/index.js",
@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/agusgarcia3007/bun-logs#readme",
   "scripts": {
-    "build": "bun build --entrypoints src/index.ts src/worker.ts --outdir dist --target bun --minify",
+    "build": "bun build --entrypoints src/index.ts src/worker.ts --outdir dist --target bun --minify && cp src/index.d.ts dist/index.d.ts",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
     "dev": "bun run examples/dev.ts",
