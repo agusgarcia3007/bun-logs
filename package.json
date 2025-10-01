@@ -1,0 +1,30 @@
+{
+  "name": "bun-logger",
+  "version": "0.1.0",
+  "description": "Ultra-light, Bun-first async logger with batching & worker offload",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "bun build --entrypoints src/index.ts src/worker.ts --outdir dist --target bun --minify",
+    "dev": "bun run examples/dev.ts",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "bun",
+    "logger",
+    "logging",
+    "worker",
+    "ndjson",
+    "async"
+  ],
+  "author": "agusgarcia3007",
+  "license": "MIT"
+}
