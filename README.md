@@ -78,6 +78,21 @@ const logger = createLogger({
 // INFO  [2025-10-01T12:34:56.789Z] User logged in {"userId":"123"}
 ```
 
+### Raw format (message only)
+
+```ts
+const logger = createLogger({
+  format: "raw",
+});
+
+logger.info("Server started on port 3000");
+logger.info("✅ All systems operational");
+
+// Output (just the message):
+// Server started on port 3000
+// ✅ All systems operational
+```
+
 ### Custom colors
 
 ```ts

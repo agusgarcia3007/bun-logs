@@ -1,4 +1,4 @@
-type OutputFormat = "json" | "pretty";
+type OutputFormat = "json" | "pretty" | "raw";
 type Destination = "stdout" | "stderr" | { file: string } | { fd: number };
 
 let BATCH = 64,
@@ -36,6 +36,11 @@ function formatLog(entry: {
     return JSON.stringify(entry);
   }
 
+  if (FORMAT === "raw") {
+    return entry.msg;
+  }
+
+  // Pretty format
   const ts = new Date(entry.t).toISOString();
   const color = COLORS[entry.level] ?? "";
   const reset = COLORS.reset;

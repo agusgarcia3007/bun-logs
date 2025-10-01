@@ -6,7 +6,7 @@ const LEVEL: Record<LogLevel, number> = {
   error: 40,
 };
 
-export type OutputFormat = "json" | "pretty";
+export type OutputFormat = "json" | "pretty" | "raw";
 export type OutputDestination = "stdout" | "stderr" | { file: string } | { fd: number };
 
 export type Color =
