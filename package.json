@@ -1,5 +1,5 @@
 {
-  "name": "bun-logger",
+  "name": "bun-logs",
   "version": "0.1.0",
   "description": "Ultra-light, Bun-first async logger with batching & worker offload",
   "type": "module",
@@ -11,7 +11,20 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/agusgarcia3007/bun-logger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/agusgarcia3007/bun-logger/issues"
+  },
+  "homepage": "https://github.com/agusgarcia3007/bun-logger#readme",
   "scripts": {
     "build": "bun build --entrypoints src/index.ts src/worker.ts --outdir dist --target bun --minify",
     "test": "bun test",

@@ -1,0 +1,9 @@
+src/
+examples/
+*.test.ts
+.git/
+.gitignore
+tsconfig.json
+CLAUDE.md
+node_modules/
+bun.lockb

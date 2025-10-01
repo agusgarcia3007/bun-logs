@@ -1,10 +1,10 @@
-# bun-logger
+# bun-logs
 
 Ultra-light, Bun-first async logger with batching & worker offload. Designed to keep your event loop free.
 
 ## Why?
 
-`console.log` blocks the event loop. In high-throughput applications, logging can become a bottleneck. `bun-logger` offloads all I/O to a dedicated Worker thread, batches writes, and never blocks your main thread.
+`console.log` blocks the event loop. In high-throughput applications, logging can become a bottleneck. `bun-logs` offloads all I/O to a dedicated Worker thread, batches writes, and never blocks your main thread.
 
 ## Features
 
@@ -14,12 +14,12 @@ Ultra-light, Bun-first async logger with batching & worker offload. Designed to 
 - **Multiple outputs**: stdout, stderr, files, or custom file descriptors
 - **Formats**: JSON (structured) or pretty (human-readable with colors)
 - **Zero dependencies**: Pure Bun APIs
-- **Tiny**: < 200 LOC total
+- **Tiny**: 4KB packed, < 200 LOC total
 
 ## Installation
 
 ```bash
-bun add bun-logger
+bun add bun-logs
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ bun add bun-logger
 ### Basic
 
 ```ts
-import { createLogger } from "bun-logger";
+import { createLogger } from "bun-logs";
 
 const logger = createLogger();
 
