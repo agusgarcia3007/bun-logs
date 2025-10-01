@@ -54,19 +54,29 @@ function formatLog(entry: {
   return `${level} [${ts}] ${entry.msg}${metaStr}`;
 }
 
+async function ensureDirectory(filePath: string) {
+  const dir = filePath.substring(0, filePath.lastIndexOf("/"));
+  if (dir) {
+    await Bun.write(Bun.file(dir + "/.keep"), "");
+    await Bun.$`mkdir -p ${dir}`.quiet();
+  }
+}
+
 async function getWriter() {
   if (fileHandle) return fileHandle;
 
   if (typeof DEST === "string") {
     if (DEST === "stdout") return Bun.stdout;
     if (DEST === "stderr") return Bun.stderr;
-    // File path - open once in append mode and cache
+    // File path - ensure directory exists, then open once in append mode and cache
+    await ensureDirectory(DEST);
     fileHandle = Bun.file(DEST).writer();
     return fileHandle;
   }
 
   if (typeof DEST === "object") {
     if ("file" in DEST) {
+      await ensureDirectory(DEST.file);
       fileHandle = Bun.file(DEST.file).writer();
       return fileHandle;
     }
