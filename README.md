@@ -1,15 +1,122 @@
 # bun-logger
 
-To install dependencies:
+Ultra-light, Bun-first async logger with batching & worker offload. Designed to keep your event loop free.
+
+## Why?
+
+`console.log` blocks the event loop. In high-throughput applications, logging can become a bottleneck. `bun-logger` offloads all I/O to a dedicated Worker thread, batches writes, and never blocks your main thread.
+
+## Features
+
+- **Non-blocking**: All I/O happens in a Worker thread
+- **Batching**: Configurable batch size and flush interval
+- **Backpressure**: Queue overflow protection with drop reporting
+- **Multiple outputs**: stdout, stderr, files, or custom file descriptors
+- **Formats**: JSON (structured) or pretty (human-readable with colors)
+- **Zero dependencies**: Pure Bun APIs
+- **Tiny**: < 200 LOC total
+
+## Installation
 
 ```bash
-bun install
+bun add bun-logger
 ```
 
-To run:
+## Usage
 
-```bash
-bun run index.ts
+### Basic
+
+```ts
+import { createLogger } from "bun-logger";
+
+const logger = createLogger();
+
+logger.info("Server started", { port: 3000 });
+logger.warn("High memory usage", { usage: "85%" });
+logger.error("Database connection failed", { error: "timeout" });
+
+// Ensure all logs are written before exit
+await logger.close();
 ```
 
-This project was created using `bun init` in bun v1.2.22. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+### Configuration
+
+```ts
+const logger = createLogger({
+  level: "debug",              // Minimum log level (default: "info")
+  format: "pretty",            // "json" | "pretty" (default: "json")
+  destination: "stderr",       // "stdout" | "stderr" | { file: "app.log" } | { fd: 3 }
+  batchSize: 128,              // Flush after N logs (default: 64)
+  flushInterval: 100,          // Flush after N ms (default: 200)
+  maxQueueSize: 2048,          // Backpressure threshold (default: 1024)
+  onError: (err) => {          // Error handler (default: console.error)
+    console.error("Logger error:", err);
+  },
+});
+```
+
+### Log to file
+
+```ts
+const logger = createLogger({
+  format: "json",
+  destination: { file: "./logs/app.log" },
+});
+
+logger.info("Request received", { method: "GET", path: "/" });
+```
+
+### Pretty output for development
+
+```ts
+const logger = createLogger({
+  format: "pretty",
+  level: "debug",
+});
+
+// Output with colors (when TTY):
+// INFO  [2025-10-01T12:34:56.789Z] User logged in {"userId":"123"}
+```
+
+## API
+
+### `createLogger(options?): Logger`
+
+Creates a logger instance.
+
+**Options:**
+- `level?: "debug" | "info" | "warn" | "error"` - Minimum log level
+- `format?: "json" | "pretty"` - Output format
+- `destination?: "stdout" | "stderr" | { file: string } | { fd: number }` - Output destination
+- `batchSize?: number` - Number of logs to batch before flushing
+- `flushInterval?: number` - Maximum time (ms) before flushing
+- `maxQueueSize?: number` - Max queue size for backpressure
+- `onError?: (err: Error) => void` - Error callback
+
+### `Logger`
+
+**Methods:**
+- `debug(msg: string, meta?: Record<string, unknown>): void`
+- `info(msg: string, meta?: Record<string, unknown>): void`
+- `warn(msg: string, meta?: Record<string, unknown>): void`
+- `error(msg: string, meta?: Record<string, unknown>): void`
+- `flush(): Promise<void>` - Flush all pending logs
+- `close(): Promise<void>` - Flush and terminate worker
+
+## Performance
+
+Offloading to a Worker means your main thread stays responsive even under heavy logging:
+
+```ts
+const logger = createLogger();
+
+// Log 10k messages - returns immediately
+for (let i = 0; i < 10000; i++) {
+  logger.info("Message", { idx: i });
+}
+// Main thread is still free! 🚀
+```
+
+## License
+
+MIT

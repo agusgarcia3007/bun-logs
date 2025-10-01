@@ -88,7 +88,16 @@ async function flushNow() {
 
   try {
     const writer = await getWriter();
-    await Bun.write(writer, chunk);
+
+    if (fileWriter && writer === fileWriter) {
+      // FileSink uses .write() method
+      writer.write(chunk);
+      await writer.flush();
+    } else {
+      // BunFile uses Bun.write()
+      await Bun.write(writer, chunk);
+    }
+
     (self as any).postMessage({ __processed: count });
   } catch (err) {
     (self as any).postMessage({ __error: String(err) });
